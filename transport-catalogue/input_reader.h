@@ -14,6 +14,6 @@ namespace TrancportCatalogue {
 			void Stop(Catalogue& cataloge, std::string& text);
 		}
 
-		void Read(Catalogue& cataloge);
+		void Read(Catalogue& cataloge, std::istream& in);
 	}
 }

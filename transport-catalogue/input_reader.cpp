@@ -43,15 +43,15 @@ void input::line::Buses(Catalogue& cataloge, std::unordered_set<std::string>& bu
 	}
 }
 
-void input::Read(Catalogue& cataloge) {
+void input::Read(Catalogue& cataloge,std::istream& in) {
 	size_t data_count;
 	std::string text;
 	std::unordered_set<std::string> bus_wait;
-	std::getline(std::cin, text);
+	std::getline(in, text);
 
 	data_count = std::stoul(text);
 	for (size_t count = 0; count < data_count; ++count) {
-		std::getline(std::cin, text);
+		std::getline(in, text);
 		if (text[0] == 'B') {
 			bus_wait.insert(move(text));
 		}

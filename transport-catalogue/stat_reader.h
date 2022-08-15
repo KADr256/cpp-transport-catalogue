@@ -9,10 +9,10 @@
 namespace TrancportCatalogue {
 	namespace output {
 
-		void Read(Catalogue& catalogue);
+		void Read(Catalogue& catalogue, std::istream& in, std::ostream& out);
 
-		void Bus(std::string& text, Catalogue& catalogue);
+		void Bus(std::string& text, Catalogue& catalogue, std::ostream& out);
 
-		void Stop(std::string& text, Catalogue& catalogue);
+		void Stop(std::string& text, Catalogue& catalogue, std::ostream& out);
 	}
 }

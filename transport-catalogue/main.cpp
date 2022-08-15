@@ -9,7 +9,7 @@ int main() {
 	std::streambuf* cinbuf = std::cin.rdbuf();
 	std::cin.rdbuf(in.rdbuf());
 	*/
-	TrancportCatalogue::Catalogue catalogue= TrancportCatalogue::Catalogue();
-	TrancportCatalogue::input::Read(catalogue);
-	TrancportCatalogue::output::Read(catalogue);
- }
+	TrancportCatalogue::Catalogue catalogue = TrancportCatalogue::Catalogue();
+	TrancportCatalogue::input::Read(catalogue, std::cin);
+	TrancportCatalogue::output::Read(catalogue, std::cin, std::cout);
+}
