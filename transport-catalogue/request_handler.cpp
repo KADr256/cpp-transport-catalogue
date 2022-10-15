@@ -1,7 +1,7 @@
 #include "request_handler.h"
 
-using namespace TrancportCatalogue;
-
+using namespace TransportCatalogue;
+/*
 void input::line::Buses(Catalogue& cataloge, std::unordered_set<std::string>& bus_wait) {
 	for (auto& text : bus_wait) {
 		std::string_view text_sv = text;
@@ -155,54 +155,4 @@ void output::Stop(std::string& text, Catalogue& catalogue, std::ostream& out) {
 		out << std::endl;
 	}
 }
-
-detail::MapData map::DataForMap(Catalogue& catalogue) {
-	detail::MapData result;
-	std::set<std::string_view> buf_bus;
-	std::set<std::string_view> buf_stop;
-	for (auto& bus : catalogue.bus) {
-		if (bus.second.stations.empty() == false) {
-			buf_bus.insert(bus.first);
-		}
-	}
-	for (auto& bus : buf_bus) {
-		auto iter = catalogue.bus.find(bus);
-
-		result.bus_name.push_back(std::pair(bus, catalogue.FindStopData((*iter).second.stations[0]).coord));
-
-		size_t coord_count = (*iter).second.stations.size();
-		for (auto& station_sv : (*iter).second.stations) {
-			auto& coord = catalogue.FindStopData(station_sv).coord;
-			result.coords_way.push_back(coord);
-		}
-		if ((*iter).second.type == detail::RouteType::twoway) {
-			size_t station_count = coord_count;
-
-			size_t last_pos = coord_count - 1;
-			if ((*iter).second.stations[last_pos] != (*iter).second.stations[0]) {
-				result.bus_name.push_back(std::pair(bus, catalogue.FindStopData((*iter).second.stations[last_pos]).coord));
-			}
-
-			for (size_t i = 1; i < station_count; ++i) {
-				auto& station_sv = (*iter).second.stations[station_count - i - 1];
-				auto& coord = catalogue.FindStopData(station_sv).coord;
-				result.coords_way.push_back(coord);
-			}
-			coord_count = coord_count * 2 - 1;
-		}
-		result.coords_count.push_back(coord_count);
-	}
-
-	for (auto& stop : catalogue.stops) {
-		if (stop.second.buses.empty() == false) {
-			buf_stop.insert(stop.first);
-		}
-	}
-
-	for (auto& stop : buf_stop) {
-		auto iter = catalogue.stops.find(stop);
-		result.stop_name.push_back(std::pair(stop, (*iter).second.coord));
-	}
-
-	return result;
-}
+*/

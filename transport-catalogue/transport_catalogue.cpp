@@ -1,6 +1,6 @@
 #include "transport_catalogue.h"
 
-using namespace TrancportCatalogue;
+using namespace TransportCatalogue;
 
 void Catalogue::AddStop(const std::string& stop_name, const  geo::Coordinates stop_data) {
 	std::string_view stop_name_sv = *words.insert(stop_name).first;

@@ -1,182 +1,7 @@
 #include "json_reader.h"
 
-namespace TrancportCatalogue {
+namespace TransportCatalogue {
 	namespace json_processing {
-		namespace input {
-			void ProcessBus(Catalogue& catalog, const json::Map& map) {
-				std::string bus_name = map.at("name").AsString();
-				detail::RouteType type;
-				std::deque<std::string> bus_way;
-
-				if (map.at("is_roundtrip").AsBool()) {
-					type = detail::RouteType::oneway;
-				}
-				else {
-					type = detail::RouteType::twoway;
-				}
-
-				for (auto& stop : map.at("stops").AsArray()) {
-					bus_way.push_back(stop.AsString());
-				}
-				catalog.AddBus(bus_name, bus_way, type);
-			}
-
-			void ProcessStop(Catalogue& catalog, const json::Map& map) {
-				std::string stop_name = map.at("name").AsString();
-				geo::Coordinates coord = { map.at("latitude").AsDouble(),map.at("longitude").AsDouble() };
-
-				catalog.AddStop(stop_name, coord);
-
-				if (map.count("road_distances")) {
-					for (auto& part : map.at("road_distances").AsMap()) {
-						catalog.AddWay(stop_name, part.first, part.second.AsInt());
-					};
-				}
-			}
-
-			SvgSetting MapSettings(const json::Document& document) {
-				SvgSetting setting;
-				if (document.GetRoot().AsMap().count("render_settings")) {
-					auto iter = document.GetRoot().AsMap().find("render_settings");
-					auto& map = (*iter).second.AsMap();
-					setting.width = map.at("width").AsDouble();
-					setting.height = map.at("height").AsDouble();
-					setting.padding = map.at("padding").AsDouble();
-					setting.line_width = map.at("line_width").AsDouble();
-					setting.stop_radius = map.at("stop_radius").AsDouble();
-					setting.bus_label_font_size = map.at("bus_label_font_size").AsInt();
-					setting.bus_label_offset = { map.at("bus_label_offset").AsArray()[0].AsDouble(),map.at("bus_label_offset").AsArray()[1].AsDouble() };
-					setting.stop_label_font_size = map.at("stop_label_font_size").AsInt();
-					setting.stop_label_offset = { map.at("stop_label_offset").AsArray()[0].AsDouble(),map.at("stop_label_offset").AsArray()[1].AsDouble() };
-					setting.underlayer_color = TrancportCatalogue::json_processing::ColorUndefine(map.at("underlayer_color"));
-					setting.underlayer_width = map.at("underlayer_width").AsDouble();
-					{
-						auto& color_palette = map.at("color_palette").AsArray();
-						for (auto& part : color_palette) {
-							setting.color_palette.push_back(TrancportCatalogue::json_processing::ColorUndefine(part));
-						}
-					}
-				}
-				return setting;
-			}
-
-			void Process(Catalogue& catalog, const json::Document& document) {
-				{
-					if (document.GetRoot().AsMap().count("base_requests")) {
-						auto iter = document.GetRoot().AsMap().find("base_requests");
-						if ((*iter).second.AsArray().size() != 0) {
-							for (auto& part : (*iter).second.AsArray()) {
-								if (part.AsMap().at("type").AsString() == "Stop") {
-									input::ProcessStop(catalog, part.AsMap());
-								}
-							}
-							for (auto& part : (*iter).second.AsArray()) {
-								if (part.AsMap().at("type").AsString() == "Bus") {
-									input::ProcessBus(catalog, part.AsMap());
-								}
-							}
-
-						}
-					}
-				}
-			}
-		}
-
-		namespace output {
-			void ProcessBus(Catalogue& catalog, const json::Map& map, std::ostream& out) {
-				auto data = catalog.ProcessBusData(map.at("name").AsString());
-				if (data.lenght == -1) {
-					out << "\"request_id\": " << map.at("id").AsInt() << "," << "\"error_message\": \"not found\"";
-				}
-				else {
-					out.precision(6);
-					out << "\"curvature\": " << data.curvatur << ","
-						<< "\"request_id\" : " << map.at("id").AsInt() << ","
-						<< "\"route_length\" : " << data.lenght << ","
-						<< "\"stop_count\" : " << data.stops_count << ","
-						<< "\"unique_stop_count\" : " << data.unique_stops_count;
-				}
-			}
-
-			void ProcessStop(Catalogue& catalog, const json::Map& map, std::ostream& out) {
-				std::string stop = map.at("name").AsString();
-				if (!catalog.KnownStop(stop)) {
-					out << "\"request_id\": " << map.at("id").AsInt() << "," << "\"error_message\": \"not found\"";
-					return;
-				}
-				auto& buses = catalog.FindStopData(stop).buses;
-				if (buses.size() == 0) {
-					out << "\"buses\": [], \"request_id\": " << map.at("id").AsInt();
-				}
-				else {
-					bool first = true;
-					out.precision(6);
-					out << "\"buses\": [";
-					for (auto& part : buses) {
-						if (first) {
-							first = false;
-						}
-						else {
-							out << ",";
-						}
-						out << "\"" << part << "\"";
-					}
-					out << "], \"request_id\": " << map.at("id").AsInt();
-				}
-			}
-
-			void ProcessMap(Catalogue& catalog, const json::Map& map, const json::Document& document, std::ostream& out) {
-				std::stringstream buf1;
-				auto setting = input::MapSettings(document);
-				auto data = TrancportCatalogue::map::DataForMap(catalog);
-				out << "\"map\": ";
-				MapOut(setting, data, buf1);
-
-				auto buf2 = json::Document(buf1.str());
-
-				json::Print(buf2, out);
-
-				out << ", \"request_id\": " << map.at("id").AsInt();
-			}
-
-			void Process(Catalogue& catalog, const json::Document& document, std::ostream& out) {
-				bool first = true;
-				if (document.GetRoot().AsMap().count("stat_requests")) {
-					auto iter = document.GetRoot().AsMap().find("stat_requests");
-					if ((*iter).second.AsArray().size() != 0) {
-						out << "[";
-						for (auto& part : (*iter).second.AsArray()) {
-							if (first) {
-								first = false;
-							}
-							else {
-								out << ",";
-							}
-							out << "{";
-							if (part.AsMap().at("type").AsString() == "Bus") {
-								output::ProcessBus(catalog, part.AsMap(), out);
-							}
-							else if (part.AsMap().at("type").AsString() == "Stop") {
-								output::ProcessStop(catalog, part.AsMap(), out);
-							}
-							else if (part.AsMap().at("type").AsString() == "Map") {
-								output::ProcessMap(catalog, part.AsMap(), document, out);
-							}
-							else {
-								out << "\"request_id\": " << part.AsMap().at("id").AsInt() << "," << "\"error_message\": \"not found\"";
-							}
-							out << "}";
-							if (first) {
-								first = false;
-								continue;
-							}
-						}
-						out << "]";
-					}
-				}
-			}
-		}
-
 		svg::Color ColorUndefine(const json::Node& node) {
 			svg::Color result;
 			if (node.IsString()) {
@@ -205,6 +30,178 @@ namespace TrancportCatalogue {
 
 		json::Document Read(std::istream& in) {
 			return json::Load(in);
+		}
+
+		void TransportCatalogue::json_processing::JSONReader::AddJSONStop(const json::Map& json_stop)
+		{
+			std::string stop_name = json_stop.at("name").AsString();
+			geo::Coordinates coord = { json_stop.at("latitude").AsDouble(),json_stop.at("longitude").AsDouble() };
+
+			catalogue.AddStop(stop_name, coord);
+
+			if (json_stop.count("road_distances")) {
+				for (auto& part : json_stop.at("road_distances").AsMap()) {
+					catalogue.AddWay(stop_name, part.first, part.second.AsInt());
+				};
+			}
+		}
+
+		void TransportCatalogue::json_processing::JSONReader::AddJSONBus(const json::Map& json_bus)
+		{
+			std::string bus_name = json_bus.at("name").AsString();
+			detail::RouteType type;
+			std::deque<std::string> bus_way;
+
+			if (json_bus.at("is_roundtrip").AsBool()) {
+				type = detail::RouteType::oneway;
+			}
+			else {
+				type = detail::RouteType::twoway;
+			}
+
+			for (auto& stop : json_bus.at("stops").AsArray()) {
+				bus_way.push_back(stop.AsString());
+			}
+			catalogue.AddBus(bus_name, bus_way, type);
+		}
+
+		void TransportCatalogue::json_processing::JSONReader::ProcessBaseRequests()
+		{
+			{
+				if (document_.GetRoot().AsMap().count("base_requests")) {
+					auto iter = document_.GetRoot().AsMap().find("base_requests");
+					if ((*iter).second.AsArray().size() != 0) {
+						for (auto& part : (*iter).second.AsArray()) {
+							if (part.AsMap().at("type").AsString() == "Stop") {
+								AddJSONStop(part.AsMap());
+							}
+						}
+						for (auto& part : (*iter).second.AsArray()) {
+							if (part.AsMap().at("type").AsString() == "Bus") {
+								AddJSONBus(part.AsMap());
+							}
+						}
+
+					}
+				}
+			}
+		}
+
+		void TransportCatalogue::json_processing::JSONReader::AnswerJSONStop(const json::Map& json_request) {
+			std::string stop = json_request.at("name").AsString();
+			if (!catalogue.KnownStop(stop)) {
+				out_ << "\"request_id\": " << json_request.at("id").AsInt() << "," << "\"error_message\": \"not found\"";
+				return;
+			}
+			auto& buses = catalogue.FindStopData(stop).buses;
+			if (buses.size() == 0) {
+				out_ << "\"buses\": [], \"request_id\": " << json_request.at("id").AsInt();
+			}
+			else {
+				bool first = true;
+				out_.precision(6);
+				out_ << "\"buses\": [";
+				for (auto& part : buses) {
+					if (first) {
+						first = false;
+					}
+					else {
+						out_ << ",";
+					}
+					out_ << "\"" << part << "\"";
+				}
+				out_ << "], \"request_id\": " << json_request.at("id").AsInt();
+			}
+		}
+
+		void TransportCatalogue::json_processing::JSONReader::AnswerJSONBus(const json::Map& json_request)
+		{
+			auto data = catalogue.ProcessBusData(json_request.at("name").AsString());
+			if (data.lenght == -1) {
+				out_ << "\"request_id\": " << json_request.at("id").AsInt() << "," << "\"error_message\": \"not found\"";
+			}
+			else {
+				out_.precision(6);
+				out_ << "\"curvature\": " << data.curvatur << ","
+					<< "\"request_id\" : " << json_request.at("id").AsInt() << ","
+					<< "\"route_length\" : " << data.lenght << ","
+					<< "\"stop_count\" : " << data.stops_count << ","
+					<< "\"unique_stop_count\" : " << data.unique_stops_count;
+			}
+		}
+
+		SvgSetting TransportCatalogue::json_processing::JSONReader::ProcessRenderSettings()
+		{
+			SvgSetting setting;
+			if (document_.GetRoot().AsMap().count("render_settings")) {
+				auto iter = document_.GetRoot().AsMap().find("render_settings");
+				auto& map = (*iter).second.AsMap();
+				setting.width = map.at("width").AsDouble();
+				setting.height = map.at("height").AsDouble();
+				setting.padding = map.at("padding").AsDouble();
+				setting.line_width = map.at("line_width").AsDouble();
+				setting.stop_radius = map.at("stop_radius").AsDouble();
+				setting.bus_label_font_size = map.at("bus_label_font_size").AsInt();
+				setting.bus_label_offset = { map.at("bus_label_offset").AsArray()[0].AsDouble(),map.at("bus_label_offset").AsArray()[1].AsDouble() };
+				setting.stop_label_font_size = map.at("stop_label_font_size").AsInt();
+				setting.stop_label_offset = { map.at("stop_label_offset").AsArray()[0].AsDouble(),map.at("stop_label_offset").AsArray()[1].AsDouble() };
+				setting.underlayer_color = TransportCatalogue::json_processing::ColorUndefine(map.at("underlayer_color"));
+				setting.underlayer_width = map.at("underlayer_width").AsDouble();
+				{
+					auto& color_palette = map.at("color_palette").AsArray();
+					for (auto& part : color_palette) {
+						setting.color_palette.push_back(TransportCatalogue::json_processing::ColorUndefine(part));
+					}
+				}
+			}
+			return setting;
+		}
+
+		void TransportCatalogue::json_processing::JSONReader::AnswerJSONMap(const json::Map& map)
+		{
+			std::stringstream buf1;
+			auto setting = ProcessRenderSettings();
+			out_ << "\"map\": ";
+			MapRenderer map_ren=MapRenderer (setting, catalogue, buf1);
+
+			auto buf2 = json::Document(buf1.str());
+
+			json::Print(buf2, out_);
+
+			out_ << ", \"request_id\": " << map.at("id").AsInt();
+		}
+
+		void TransportCatalogue::json_processing::JSONReader::ProcessStatRequests() { //Абсолютно не вижу вариантов перенести определение запросов в request_handler, без превращения всего проекта в паутину зависимостей или без обработки в json_reader 
+			bool first = true;
+			if (document_.GetRoot().AsMap().count("stat_requests")) {
+				auto iter = document_.GetRoot().AsMap().find("stat_requests");
+				if ((*iter).second.AsArray().size() != 0) {
+					out_ << "[";
+					for (auto& part : (*iter).second.AsArray()) {
+						if (first) {
+							first = false;
+						}
+						else {
+							out_ << ",";
+						}
+						out_ << "{";
+						if (part.AsMap().at("type").AsString() == "Bus") {
+							AnswerJSONBus(part.AsMap());
+						}
+						else if (part.AsMap().at("type").AsString() == "Stop") {
+							AnswerJSONStop(part.AsMap());
+						}
+						else if (part.AsMap().at("type").AsString() == "Map") {
+							AnswerJSONMap(part.AsMap());
+						}
+						else {
+							out_ << "\"request_id\": " << part.AsMap().at("id").AsInt() << "," << "\"error_message\": \"not found\"";
+						}
+						out_ << "}";
+					}
+					out_ << "]";
+				}
+			}
 		}
 	}
 }

@@ -4,8 +4,6 @@
 #include <fstream>
 
 int main() {
-	TrancportCatalogue::Catalogue catalogue = TrancportCatalogue::Catalogue();
-	auto document = TrancportCatalogue::json_processing::Read(std::cin);
-	TrancportCatalogue::json_processing::input::Process(catalogue, document);
-	TrancportCatalogue::json_processing::output::Process(catalogue, document, std::cout);
+	TransportCatalogue::Catalogue catalogue = TransportCatalogue::Catalogue();
+	TransportCatalogue::json_processing::JSONReader json_read(catalogue, std::cin, std::cout);
 }

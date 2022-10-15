@@ -8,7 +8,8 @@
 
 #include "transport_catalogue.h"
 
-namespace TrancportCatalogue {
+namespace TransportCatalogue {
+	/*
 	namespace input {
 		namespace line {
 			void Buses(Catalogue& cataloge, std::unordered_set<std::string>& bus_wait);
@@ -25,8 +26,5 @@ namespace TrancportCatalogue {
 
 		void Stop(std::string& text, Catalogue& catalogue, std::ostream& out);
 	}
-
-	namespace map {
-		detail::MapData DataForMap(Catalogue& catalogue);
-	}
+	*/
 }

@@ -9,7 +9,7 @@
 
 #include "domain.h"
 
-namespace TrancportCatalogue {
+namespace TransportCatalogue {
 	class Catalogue {
 	public:
 

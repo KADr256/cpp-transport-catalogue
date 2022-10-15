@@ -3,7 +3,7 @@
 #include "geo.h"
 #include "domain.h"
 #include "svg.h"
-#include <vector>
+#include "transport_catalogue.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -12,7 +12,9 @@
 #include <vector>
 
 inline const double EPSILON = 1e-6;
-inline bool IsZero(double value);
+inline bool IsZero(double value) {
+	return std::abs(value) < EPSILON;
+}
 
 struct SvgSetting {
 	double width;
@@ -98,4 +100,26 @@ private:
 	double zoom_coeff_ = 0;
 };
 
-void MapOut(SvgSetting& setting, TrancportCatalogue::detail::MapData& map, std::ostream& out);
+TransportCatalogue::detail::MapData DataForMap(TransportCatalogue::Catalogue& catalogue); //Не нравиться мне, что map_renderer использует transport_catalogue + Это вне класса из-за SphereProjector(нужны готовые точки для конструктора)
+
+class MapRenderer {
+public:
+	MapRenderer(SvgSetting& settings, TransportCatalogue::Catalogue& catalogue,std::ostream& out) :settings_(settings),data_(DataForMap(catalogue)),
+		proj_(data_.coords_way.begin(), data_.coords_way.end(), settings_.width, settings_.height, settings_.padding) {
+		PaintWays();
+		PaintBusName();
+		PaintStop();
+		PaintStopName();
+		doc_.Render(out);
+	};
+
+	void PaintWays();
+	void PaintBusName();
+	void PaintStop();
+	void PaintStopName();
+private:
+	SvgSetting& settings_;
+	TransportCatalogue::detail::MapData data_;
+	svg::Document doc_;
+	SphereProjector proj_;
+};
