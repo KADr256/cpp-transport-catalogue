@@ -87,46 +87,61 @@ namespace TransportCatalogue {
 			}
 		}
 
-		void TransportCatalogue::json_processing::JSONReader::AnswerJSONStop(const json::Map& json_request) {
+		json::NodeData TransportCatalogue::json_processing::JSONReader::AnswerJSONStop(const json::Map& json_request) {
 			std::string stop = json_request.at("name").AsString();
 			if (!catalogue.KnownStop(stop)) {
-				out_ << "\"request_id\": " << json_request.at("id").AsInt() << "," << "\"error_message\": \"not found\"";
-				return;
+				return json::Builder{}
+					.StartDict()
+					.Key("request_id").Value(json_request.at("id").AsInt())
+					.Key("error_message").Value("not found")
+					.EndDict()
+					.Build().AsMap();
 			}
 			auto& buses = catalogue.FindStopData(stop).buses;
 			if (buses.size() == 0) {
-				out_ << "\"buses\": [], \"request_id\": " << json_request.at("id").AsInt();
+				return json::Builder{}
+					.StartDict()
+					.Key("buses")
+					.StartArray()
+					.EndArray()
+					.Key("request_id").Value(json_request.at("id").AsInt())
+					.EndDict()
+					.Build().AsMap();
 			}
 			else {
-				bool first = true;
-				out_.precision(6);
-				out_ << "\"buses\": [";
+				json::Builder Answer;
+				Answer.StartDict()
+					.Key("buses")
+					.StartArray();
 				for (auto& part : buses) {
-					if (first) {
-						first = false;
-					}
-					else {
-						out_ << ",";
-					}
-					out_ << "\"" << part << "\"";
+					Answer.Value(static_cast<std::string>(part));
 				}
-				out_ << "], \"request_id\": " << json_request.at("id").AsInt();
+				Answer.EndArray()
+					.Key("request_id").Value(json_request.at("id").AsInt())
+					.EndDict();
+				return Answer.Build().AsMap();
 			}
 		}
 
-		void TransportCatalogue::json_processing::JSONReader::AnswerJSONBus(const json::Map& json_request)
+		json::NodeData TransportCatalogue::json_processing::JSONReader::AnswerJSONBus(const json::Map& json_request)
 		{
 			auto data = catalogue.ProcessBusData(json_request.at("name").AsString());
 			if (data.lenght == -1) {
-				out_ << "\"request_id\": " << json_request.at("id").AsInt() << "," << "\"error_message\": \"not found\"";
+				return json::Builder{}.StartDict()
+					.Key("request_id").Value(json_request.at("id").AsInt())
+					.Key("error_message").Value("not found")
+					.EndDict()
+					.Build().AsMap();
 			}
 			else {
-				out_.precision(6);
-				out_ << "\"curvature\": " << data.curvatur << ","
-					<< "\"request_id\" : " << json_request.at("id").AsInt() << ","
-					<< "\"route_length\" : " << data.lenght << ","
-					<< "\"stop_count\" : " << data.stops_count << ","
-					<< "\"unique_stop_count\" : " << data.unique_stops_count;
+				return json::Builder{}.StartDict()
+					.Key("curvature").Value(data.curvatur)
+					.Key("request_id").Value(json_request.at("id").AsInt())
+					.Key("route_length").Value(data.lenght)
+					.Key("stop_count").Value(static_cast<int>(data.stops_count))
+					.Key("unique_stop_count").Value(static_cast<int>(data.unique_stops_count))
+					.EndDict()
+					.Build().AsMap();
 			}
 		}
 
@@ -157,49 +172,48 @@ namespace TransportCatalogue {
 			return setting;
 		}
 
-		void TransportCatalogue::json_processing::JSONReader::AnswerJSONMap(const json::Map& map)
+		json::NodeData TransportCatalogue::json_processing::JSONReader::AnswerJSONMap(const json::Map& map)
 		{
+			json::Builder Answer;
 			std::stringstream buf1;
 			auto setting = ProcessRenderSettings();
-			out_ << "\"map\": ";
-			MapRenderer map_ren=MapRenderer (setting, catalogue, buf1);
+			MapRenderer map_ren = MapRenderer(setting, catalogue, buf1);
 
-			auto buf2 = json::Document(buf1.str());
-
-			json::Print(buf2, out_);
-
-			out_ << ", \"request_id\": " << map.at("id").AsInt();
+			Answer.StartDict()
+				.Key("map").Value(buf1.str())
+				.Key("request_id").Value(map.at("id").AsInt())
+				.EndDict();
+			return Answer.Build().AsMap();
 		}
 
-		void TransportCatalogue::json_processing::JSONReader::ProcessStatRequests() { //Абсолютно не вижу вариантов перенести определение запросов в request_handler, без превращения всего проекта в паутину зависимостей или без обработки в json_reader 
-			bool first = true;
+		void TransportCatalogue::json_processing::JSONReader::ProcessStatRequests() {
 			if (document_.GetRoot().AsMap().count("stat_requests")) {
 				auto iter = document_.GetRoot().AsMap().find("stat_requests");
 				if ((*iter).second.AsArray().size() != 0) {
-					out_ << "[";
+
+					json::Builder Answer;
+					Answer.StartArray();
 					for (auto& part : (*iter).second.AsArray()) {
-						if (first) {
-							first = false;
-						}
-						else {
-							out_ << ",";
-						}
-						out_ << "{";
 						if (part.AsMap().at("type").AsString() == "Bus") {
-							AnswerJSONBus(part.AsMap());
+							Answer.Value(AnswerJSONBus(part.AsMap()));
 						}
 						else if (part.AsMap().at("type").AsString() == "Stop") {
-							AnswerJSONStop(part.AsMap());
+							Answer.Value(AnswerJSONStop(part.AsMap()));
 						}
 						else if (part.AsMap().at("type").AsString() == "Map") {
-							AnswerJSONMap(part.AsMap());
+							Answer.Value(AnswerJSONMap(part.AsMap()));
 						}
 						else {
-							out_ << "\"request_id\": " << part.AsMap().at("id").AsInt() << "," << "\"error_message\": \"not found\"";
+							Answer.StartDict()
+								.Key("request_id").Value(part.AsMap().at("id").AsInt())
+								.Key("error_message").Value("not found")
+								.EndDict();
 						}
-						out_ << "}";
 					}
-					out_ << "]";
+					Answer.EndArray()
+						.Build();
+					out_ << std::setprecision(6);
+					json::Print(json::Document(Answer.Build()), out_);
 				}
 			}
 		}

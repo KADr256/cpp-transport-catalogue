@@ -5,6 +5,7 @@
 #include "transport_catalogue.h"
 #include "request_handler.h"
 #include "map_renderer.h"
+#include "json_builder.h"
 
 namespace TransportCatalogue {
 	namespace json_processing {
@@ -27,13 +28,13 @@ namespace TransportCatalogue {
 
 			void ProcessBaseRequests();
 
-			void AnswerJSONStop(const json::Map& map);
+			json::NodeData AnswerJSONStop(const json::Map& map);
 
-			void AnswerJSONBus(const json::Map& map);
+			json::NodeData AnswerJSONBus(const json::Map& map);
 
 			SvgSetting ProcessRenderSettings();
 
-			void AnswerJSONMap(const json::Map& map);
+			json::NodeData AnswerJSONMap(const json::Map& map);
 
 			void ProcessStatRequests();
 

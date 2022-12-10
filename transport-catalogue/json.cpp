@@ -294,16 +294,6 @@ namespace json {
 	bool Node::IsString() const {
 		return std::holds_alternative<std::string>(data_);
 	}
-	/*
-	bool Node::IsNull() const {
-		if (IsDouble()) {
-			return AsDouble() == 0;
-		}
-		else {
-			return std::holds_alternative<nullptr_t>(data_);
-		}
-	}
-	*/
 	bool Node::IsNull() const {
 		return std::holds_alternative<nullptr_t>(data_);
 	}
@@ -371,9 +361,14 @@ namespace json {
 		return data_.index();
 	}
 
-	NodeData Node::ReadData() const
+	NodeData& json::Node::AccessData()
 	{
-		return data_;
+		return this->data_;
+	}
+
+	const NodeData& Node::ReadData() const
+	{
+		return this->data_;
 	}
 
 	bool operator==(const Node f, const Node s)

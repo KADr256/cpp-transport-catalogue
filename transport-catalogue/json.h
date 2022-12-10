@@ -55,7 +55,8 @@ namespace json {
 		const Map& AsMap() const;
 
 		int VarIndex() const;
-		NodeData ReadData() const;
+		NodeData& AccessData();
+		const NodeData& ReadData() const;
 	private:
 		NodeData data_;
 	};
