@@ -6,6 +6,7 @@
 #include <vector>
 #include <deque>
 #include <variant>
+#include <optional>
 
 #include "geo.h"
 
@@ -39,6 +40,26 @@ namespace TransportCatalogue {
 			std::vector<size_t> coords_count;
 			std::deque <std::pair<std::string_view, geo::Coordinates>> bus_name;
 			std::deque <std::pair<std::string_view, geo::Coordinates>> stop_name;
+		};
+
+		struct RoutingSettingsStorage {
+			double bus_wait_time = 0;
+			double bus_velocity = 0;
+		};
+
+		enum class EdgeDataType
+		{
+			Wait,
+			Bus
+		};
+
+		struct EdgeData
+		{
+			EdgeDataType type;
+			std::optional<std::string_view> stop_from;
+			std::optional<int> stop_count;
+			std::optional<std::string_view> bus;
+			std::optional<double> time;
 		};
 	}
 }

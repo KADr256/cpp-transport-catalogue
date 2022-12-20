@@ -122,7 +122,7 @@ BuilderRaw& json::BuilderRaw::EndDict()
 
 BuilderRaw& json::BuilderRaw::EndArray()
 {
-	if (nodes_stack_.size()==0||!nodes_stack_.back()->IsArray()) {
+	if (nodes_stack_.size() == 0 || !nodes_stack_.back()->IsArray()) {
 		throw std::logic_error("Not found Array");
 	}
 	nodes_stack_.pop_back();
@@ -134,7 +134,7 @@ json::Node json::BuilderRaw::Build()
 	if (root_.IsNull()) {
 		throw std::logic_error("Root empty");
 	}
-	else if (nodes_stack_.size()!=0) {
+	else if (nodes_stack_.size() != 0) {
 		throw std::logic_error("Container not ended");
 	}
 	else if (last_key_.second) {

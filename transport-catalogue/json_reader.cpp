@@ -93,7 +93,7 @@ namespace TransportCatalogue {
 				return json::Builder{}
 					.StartDict()
 					.Key("request_id").Value(json_request.at("id").AsInt())
-					.Key("error_message").Value("not found")
+					.Key("error_message").Value((std::string)"not found")
 					.EndDict()
 					.Build().AsMap();
 			}
@@ -129,7 +129,7 @@ namespace TransportCatalogue {
 			if (data.lenght == -1) {
 				return json::Builder{}.StartDict()
 					.Key("request_id").Value(json_request.at("id").AsInt())
-					.Key("error_message").Value("not found")
+					.Key("error_message").Value((std::string)"not found")
 					.EndDict()
 					.Build().AsMap();
 			}
@@ -143,6 +143,128 @@ namespace TransportCatalogue {
 					.EndDict()
 					.Build().AsMap();
 			}
+		}
+		/*
+		void TransportCatalogue::json_processing::JSONReader::FormGraph()
+		{
+			//std::map<std::string_view, size_t> stop_id;
+			edges_.reserve(catalogue.stops.size()*catalogue.bus.size());
+			size_t counter = 0;
+			for (auto& el : catalogue.stops) {
+				if (el.second.buses.size() != 0) {
+					stop_id_.insert({ el.first,counter++ });
+				}
+			}
+			for (auto& el1 : catalogue.bus) {
+				for (auto iter1 = el1.second.stations.begin(); iter1 != el1.second.stations.end(); ++iter1) {
+					graph_.AddEdge(graph::Edge<double>{ stop_id_[*iter1] * 2, stop_id_[*iter1] * 2 + 1, routing_settings_.bus_wait_time });
+					edges_.push_back({ detail::EdgeDataType::Wait,*iter1 });
+					double dist = 0.0;
+					int depth = -1;
+					if (iter1 + 1 != el1.second.stations.end()) {
+						auto last_iter = iter1;
+						for (auto iter2 = iter1; iter2 != el1.second.stations.end(); ++iter2) {
+							++depth;
+							auto& stop_data1 = catalogue.FindStopData(*last_iter);
+							auto& stop_data2 = catalogue.FindStopData(*iter2);
+							if (stop_data1.another_ways.count(*iter2)) {
+								dist += stop_data1.another_ways[*iter2];
+							}
+							else if (stop_data2.another_ways.count(*last_iter)) {
+								dist += stop_data2.another_ways[*last_iter];
+							}
+							else {
+								dist += geo::ComputeDistance(stop_data1.coord, stop_data2.coord);
+							}
+							double copy = dist / routing_settings_.bus_velocity;
+							graph_.AddEdge(graph::Edge<double>{ stop_id_[*iter1] * 2 + 1, stop_id_[*iter2] * 2, copy});
+							edges_.push_back({detail::EdgeDataType::Bus,std::nullopt,depth,el1.first,copy});
+							last_iter = iter2;
+						}
+					}
+				}
+				if (el1.second.type == detail::RouteType::twoway) {
+					for (auto iter3 = el1.second.stations.rbegin(); iter3 != el1.second.stations.rend(); ++iter3) {
+						graph_.AddEdge(graph::Edge<double>{ stop_id_[*iter3] * 2, stop_id_[*iter3] * 2 + 1, routing_settings_.bus_wait_time });
+						edges_.push_back({ detail::EdgeDataType::Wait,*iter3 });
+						double dist = 0.0;
+						size_t depth = 0;
+						if (iter3 + 1 != el1.second.stations.rend()) {
+							auto last_iter = iter3;
+							for (auto iter4 = iter3; iter4 != el1.second.stations.rend(); ++iter4) {
+								auto& stop_data1 = catalogue.FindStopData(*last_iter);
+								auto& stop_data2 = catalogue.FindStopData(*iter4);
+								if (stop_data1.another_ways.count(*iter4)) {
+									dist += stop_data1.another_ways[*iter4];
+								}
+								else if (stop_data2.another_ways.count(*last_iter)) {
+									dist += stop_data2.another_ways[*last_iter];
+								}
+								else {
+									dist += geo::ComputeDistance(stop_data1.coord, stop_data2.coord);
+								}
+								double copy = dist / routing_settings_.bus_velocity;
+								graph_.AddEdge(graph::Edge<double>{ stop_id_[*iter3] * 2 + 1, stop_id_[*iter4] * 2, copy});
+								edges_.push_back({ detail::EdgeDataType::Bus,std::nullopt,depth,el1.first,copy});
+								last_iter = iter4;
+							}
+						}
+					}
+				}
+			}
+		}
+		*/
+
+		json::NodeData TransportCatalogue::json_processing::JSONReader::AnswerJSONRoute(const json::Map& json_request) {
+			std::string stop_from = json_request.at("from").AsString();
+			std::string stop_to = json_request.at("to").AsString();
+
+			if (!catalogue.stops.count(stop_from) || !catalogue.stops.count(stop_to)) {
+				return json::Builder{}.StartDict()
+					.Key("request_id").Value(json_request.at("id").AsInt())
+					.Key("error_message").Value((std::string)"not found")
+					.EndDict()
+					.Build().AsMap();
+			}
+
+			if (tr_ == NULL) {
+				auto set = ProcessRoutingSettings();
+				tr_ = new transport_router::TransportRouter(catalogue, set);
+			}
+
+			auto way = tr_->BuildRoute(stop_from, stop_to);
+
+			json::Builder result{};
+			result.StartDict();
+			if (way.has_value()) {
+				result.Key("items").StartArray();
+				for (auto& el1 : way.value().edges) {
+					auto& el2 = tr_->AccessEdgeData(el1);
+					if (el2.type == detail::EdgeDataType::Wait) {
+						result.StartDict()
+							.Key("type").Value((std::string)"Wait")
+							.Key("stop_name").Value((std::string)el2.stop_from.value())
+							.Key("time").Value(el2.time.value())
+							.EndDict();
+					}
+					else {
+						result.StartDict()
+							.Key("type").Value((std::string)"Bus")
+							.Key("bus").Value((std::string)el2.bus.value())
+							.Key("span_count").Value(el2.stop_count.value())
+							.Key("time").Value(el2.time.value())
+							.EndDict();
+					}
+				}
+				result.EndArray()
+					.Key("request_id").Value(json_request.at("id").AsInt())
+					.Key("total_time").Value(way.value().weight);
+			}
+			else {
+				result.Key("error_message").Value((std::string)"not found")
+					.Key("request_id").Value(json_request.at("id").AsInt());
+			}
+			return result.EndDict().Build().AsMap();
 		}
 
 		SvgSetting TransportCatalogue::json_processing::JSONReader::ProcessRenderSettings()
@@ -170,6 +292,20 @@ namespace TransportCatalogue {
 				}
 			}
 			return setting;
+		}
+
+		detail::RoutingSettingsStorage TransportCatalogue::json_processing::JSONReader::ProcessRoutingSettings()
+		{
+			detail::RoutingSettingsStorage result;
+			if (document_.GetRoot().AsMap().count("routing_settings")) {
+				auto& map = (*document_.GetRoot().AsMap().find("routing_settings")).second.AsMap();
+				result = { map.at("bus_wait_time").AsDouble(),
+					(map.at("bus_velocity").AsDouble() / 60.0) * 1000.0 };
+			}
+			if (result.bus_velocity < 0 || result.bus_wait_time < 0) {
+				throw std::logic_error("");
+			}
+			return result;
 		}
 
 		json::NodeData TransportCatalogue::json_processing::JSONReader::AnswerJSONMap(const json::Map& map)
@@ -203,16 +339,19 @@ namespace TransportCatalogue {
 						else if (part.AsMap().at("type").AsString() == "Map") {
 							Answer.Value(AnswerJSONMap(part.AsMap()));
 						}
+						else if (part.AsMap().at("type").AsString() == "Route") {
+							Answer.Value(AnswerJSONRoute(part.AsMap()));
+						}
 						else {
 							Answer.StartDict()
 								.Key("request_id").Value(part.AsMap().at("id").AsInt())
-								.Key("error_message").Value("not found")
+								.Key("error_message").Value((std::string)"not found")
 								.EndDict();
 						}
 					}
 					Answer.EndArray()
 						.Build();
-					out_ << std::setprecision(6);
+					//out_ << std::setprecision(6);
 					json::Print(json::Document(Answer.Build()), out_);
 				}
 			}

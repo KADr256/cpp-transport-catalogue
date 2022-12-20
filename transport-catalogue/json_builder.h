@@ -79,7 +79,7 @@ namespace json {
 	public:
 		ValueDictContext(BuilderSupport bs) :ValueContext(bs.builder_raw_) {};
 
-		ValueDictContext Value(json::NodeData data)=delete;
+		ValueDictContext Value(json::NodeData data) = delete;
 		StartArrayContext StartArray() = delete;
 		EndArrayContext EndArray() = delete;
 		StartDictContext StartDict() = delete;

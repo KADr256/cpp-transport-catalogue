@@ -12,7 +12,6 @@
 namespace TransportCatalogue {
 	class Catalogue {
 	public:
-
 		void AddStop(const std::string& stop_name, const  geo::Coordinates stop_data);
 
 		void AddBus(const std::string& bus_name, const  std::deque<std::string>& bus_way, const  detail::RouteType type);
