@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package SaveLoad;
+
+import "graph.proto";
+
+message RouteInternalData {
+	double weight = 1;
+	bool opt = 2;
+	uint32 prev_edge = 3;
+}
+
+message RoutesInternalDataL1 {
+	repeated bool opt = 1;
+	repeated RouteInternalData data_l1 = 2;
+}
+
+message Router {
+	repeated RoutesInternalDataL1 data_l2 = 1;
+}
+
+message EdgeData {
+	bool type = 1;
+	uint32 stop_from_id = 2;
+	int32 stop_count = 3;
+	uint32 bus_id = 4;
+	double time = 5;
+}
+
+message TransportRouter {
+	DirectedWeightedGraph graph = 1;
+	Router router = 2;
+	repeated EdgeData edges = 3;
+	repeated uint32 stop_id = 4;
+	repeated uint32 counter = 5;
+	double bus_wait_time = 6;
+	double bus_velocity = 7;
+}

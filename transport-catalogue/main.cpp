@@ -2,21 +2,31 @@
 #include "request_handler.h"
 #include "json_reader.h"
 #include <fstream>
+#include <iostream>
+#include <string_view>
 
-int main() {
-	/*
-	std::ifstream in("input.json");
-	std::streambuf* cinbuf = std::cin.rdbuf();
-	std::cin.rdbuf(in.rdbuf());
+using namespace std::literals;
 
-	std::ofstream out("stdout.txt");
-	std::streambuf* coutbuf = std::cout.rdbuf();
-	std::cout.rdbuf(out.rdbuf());
+void PrintUsage(std::ostream& stream = std::cerr) {
+    stream << "Usage: transport_catalogue [make_base|process_requests]\n"sv;
+}
 
-	std::ofstream out_err("stderr.txt");
-	std::streambuf* cerrbuf = std::cerr.rdbuf();
-	std::cerr.rdbuf(out_err.rdbuf());
-	*/
-	TransportCatalogue::Catalogue catalogue = TransportCatalogue::Catalogue();
-	TransportCatalogue::json_processing::JSONReader json_read(catalogue, std::cin, std::cout);
+int main(int argc, char* argv[]) {
+    if (argc != 2) {
+        PrintUsage();
+        return 1;
+    }
+
+    const std::string_view mode(argv[1]);
+
+    if (mode == "make_base"sv) {
+        TransportCatalogue::json_processing::JSONReaderMB buf(std::cin);
+    }
+    else if (mode == "process_requests"sv) {
+        TransportCatalogue::json_processing::JSONReader buf(std::cin,std::cout);
+    }
+    else {
+        PrintUsage();
+        return 1;
+    }
 }

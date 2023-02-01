@@ -29,12 +29,17 @@ namespace graph {
 
         std::optional<RouteInfo> BuildRoute(VertexId from, VertexId to) const;
 
-    private:
         struct RouteInternalData {
             Weight weight;
             std::optional<EdgeId> prev_edge;
         };
         using RoutesInternalData = std::vector<std::vector<std::optional<RouteInternalData>>>;
+        static constexpr Weight ZERO_WEIGHT{};
+        const Graph& graph_;
+        RoutesInternalData routes_internal_data_;
+
+        Router(const Graph& graph_in, RoutesInternalData routes_internal_data_in);
+    private:
 
         void InitializeRoutesInternalData(const Graph& graph) {
             const size_t vertex_count = graph.GetVertexCount();
@@ -74,10 +79,6 @@ namespace graph {
                 }
             }
         }
-
-        static constexpr Weight ZERO_WEIGHT{};
-        const Graph& graph_;
-        RoutesInternalData routes_internal_data_;
     };
 
     template <typename Weight>
@@ -92,6 +93,11 @@ namespace graph {
         for (VertexId vertex_through = 0; vertex_through < vertex_count; ++vertex_through) {
             RelaxRoutesInternalDataThroughVertex(vertex_count, vertex_through);
         }
+    }
+
+    template<typename Weight>
+    graph::Router<Weight>::Router(const Graph& graph_in, RoutesInternalData routes_internal_data_in): graph_(graph_in),routes_internal_data_(routes_internal_data_in)
+    {
     }
 
     template <typename Weight>

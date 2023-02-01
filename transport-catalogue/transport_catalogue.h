@@ -6,8 +6,10 @@
 #include <string>
 #include <string_view>
 #include <deque>
+#include <vector>
 
 #include "domain.h"
+#include <transport_catalogue.pb.h>//
 
 namespace TransportCatalogue {
 	class Catalogue {
@@ -22,16 +24,18 @@ namespace TransportCatalogue {
 
 		detail::StopData& FindStopData(std::string_view stop_name);
 
-		detail::RouteDataOutput ProcessBusData(const std::string& bus_name);
+		detail::RouteData ProcessBusData(const std::string& bus_name);
 
-		std::unordered_set<std::string> words;
-		std::unordered_map <std::string_view, detail::RouteDataStorage> bus;
+		void CalculateAll();
+
+		std::unordered_set<std::string> st_words;
+		std::unordered_set<std::string> bus_words;
+
 		std::unordered_map <std::string_view, detail::StopData> stops;
+		std::unordered_map <std::string_view, detail::RouteData> bus_output;
 	private:
-		detail::RouteDataOutput CalculBusDataOneway(detail::RouteDataStorage& storage);
+		void CalculBusDataOneway(detail::RouteData& storage);
 
-		detail::RouteDataOutput CalculBusDataTwoway(detail::RouteDataStorage& storage);
-
-		std::unordered_map <std::string_view, detail::RouteDataOutput> bus_output_;
+		void CalculBusDataTwoway(detail::RouteData& storage);
 	};
 }

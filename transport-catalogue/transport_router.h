@@ -13,12 +13,14 @@ namespace TransportCatalogue {
 		public:
 			inline TransportRouter(TransportCatalogue::Catalogue& cat, detail::RoutingSettingsStorage rss);
 
+			inline TransportRouter(TransportCatalogue::Catalogue& cat, detail::RoutingSettingsStorage rss, graph::DirectedWeightedGraph<double> graph_in, std::vector<detail::EdgeData> edges_in, std::map<std::string_view, size_t> stop_id_in, std::vector<std::vector<std::optional<graph::Router<double>::RouteInternalData>>> routes_internal_data_in);
+
 			auto BuildRoute(std::string_view from, std::string_view to) {
-				return router.value().BuildRoute(stop_id_[from] * 2, stop_id_[to] * 2);
+				return router.value().BuildRoute(stop_id[from] * 2, stop_id[to] * 2);
 			}
 
 			const detail::EdgeData& AccessEdgeData(size_t edge_id) {
-				return edges_[edge_id];
+				return edges[edge_id];
 			}
 
 			TransportCatalogue::Catalogue& catalogue;
@@ -26,21 +28,20 @@ namespace TransportCatalogue {
 			graph::DirectedWeightedGraph<double> graph_tr;
 
 			std::optional<graph::Router<double>> router;
-		private:
-			std::vector<detail::EdgeData> edges_;
-			std::map<std::string_view, size_t> stop_id_;
+			std::vector<detail::EdgeData> edges;
+			std::map<std::string_view, size_t> stop_id;
 		};
 
 		TransportCatalogue::transport_router::TransportRouter::TransportRouter(TransportCatalogue::Catalogue& cat, detail::RoutingSettingsStorage rss) : catalogue(cat), routing_settings(rss), graph_tr(catalogue.stops.size() * 2) // Перенос в юсзз не удался
 		{
-			edges_.reserve(catalogue.stops.size() * catalogue.bus.size());
+			edges.reserve(catalogue.stops.size() * catalogue.bus_output.size());
 			size_t counter = 0;
 			for (auto& el : catalogue.stops) {
-				stop_id_.insert({ el.first,counter++ });
-				graph_tr.AddEdge(graph::Edge<double>{ stop_id_[el.first] * 2, stop_id_[el.first] * 2 + 1, routing_settings.bus_wait_time});
-				edges_.push_back({ detail::EdgeDataType::Wait,el.first,std::nullopt,std::nullopt,routing_settings.bus_wait_time });
+				stop_id.insert({ el.first,counter++ });
+				graph_tr.AddEdge(graph::Edge<double>{ stop_id[el.first] * 2, stop_id[el.first] * 2 + 1, routing_settings.bus_wait_time});
+				edges.push_back({ detail::EdgeDataType::Wait,el.first,std::nullopt,std::nullopt,routing_settings.bus_wait_time });
 			}
-			for (auto& el1 : catalogue.bus) {
+			for (auto& el1 : catalogue.bus_output) {
 				for (auto iter1 = el1.second.stations.begin(); iter1 != el1.second.stations.end(); ++iter1) {
 					double dist = 0.0;
 					int depth = 0;
@@ -60,8 +61,8 @@ namespace TransportCatalogue {
 								dist += geo::ComputeDistance(stop_data1.coord, stop_data2.coord);
 							}
 							double copy = dist / routing_settings.bus_velocity;
-							graph_tr.AddEdge(graph::Edge<double>{ stop_id_[*iter1] * 2 + 1, stop_id_[*iter2] * 2, copy});
-							edges_.push_back({ detail::EdgeDataType::Bus,std::nullopt,depth,el1.first,copy });
+							graph_tr.AddEdge(graph::Edge<double>{ stop_id[*iter1] * 2 + 1, stop_id[*iter2] * 2, copy});
+							edges.push_back({ detail::EdgeDataType::Bus,std::nullopt,depth,el1.first,copy });
 							last_iter = iter2;
 						}
 					}
@@ -86,8 +87,8 @@ namespace TransportCatalogue {
 									dist += geo::ComputeDistance(stop_data1.coord, stop_data2.coord);
 								}
 								double copy = dist / routing_settings.bus_velocity;
-								graph_tr.AddEdge(graph::Edge<double>{ stop_id_[*iter3] * 2 + 1, stop_id_[*iter4] * 2, copy});
-								edges_.push_back({ detail::EdgeDataType::Bus,std::nullopt,depth,el1.first,copy });
+								graph_tr.AddEdge(graph::Edge<double>{ stop_id[*iter3] * 2 + 1, stop_id[*iter4] * 2, copy});
+								edges.push_back({ detail::EdgeDataType::Bus,std::nullopt,depth,el1.first,copy });
 								last_iter = iter4;
 							}
 						}
@@ -95,6 +96,12 @@ namespace TransportCatalogue {
 				}
 			}
 			router.emplace(graph_tr);
+		}
+
+		TransportCatalogue::transport_router::TransportRouter::TransportRouter(TransportCatalogue::Catalogue& cat, detail::RoutingSettingsStorage rss, graph::DirectedWeightedGraph<double> graph_in, std::vector<detail::EdgeData> edges_in, std::map<std::string_view, size_t> stop_id_in, std::vector<std::vector<std::optional<graph::Router<double>::RouteInternalData>>> routes_internal_data_in)
+			:catalogue(cat),routing_settings(rss),graph_tr(graph_in),edges(edges_in),stop_id(stop_id_in)
+		{
+			router.emplace(graph_tr,routes_internal_data_in);
 		}
 	}
 }

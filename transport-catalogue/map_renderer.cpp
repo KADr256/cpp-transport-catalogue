@@ -4,13 +4,13 @@ TransportCatalogue::detail::MapData DataForMap(TransportCatalogue::Catalogue& ca
 	TransportCatalogue::detail::MapData result;
 	std::set<std::string_view> buf_bus;
 	std::set<std::string_view> buf_stop;
-	for (auto& bus : catalogue.bus) {
+	for (auto& bus : catalogue.bus_output) {
 		if (bus.second.stations.empty() == false) {
 			buf_bus.insert(bus.first);
 		}
 	}
 	for (auto& bus : buf_bus) {
-		auto iter = catalogue.bus.find(bus);
+		auto iter = catalogue.bus_output.find(bus);
 
 		result.bus_name.push_back(std::pair(bus, catalogue.FindStopData((*iter).second.stations[0]).coord));
 

@@ -1,5 +1,7 @@
 #pragma once
 #include <sstream>
+#include <filesystem>
+#include <fstream>
 
 #include "json.h"
 #include "transport_catalogue.h"
@@ -7,6 +9,7 @@
 #include "map_renderer.h"
 #include "json_builder.h"
 #include "transport_router.h"
+#include "serialization.h"
 
 namespace TransportCatalogue {
 	namespace json_processing {
@@ -14,21 +17,31 @@ namespace TransportCatalogue {
 
 		json::Document Read(std::istream& in);
 
-		class JSONReader {
+		class JSONReaderMB {
 		public:
-			JSONReader(Catalogue& catalogue, std::istream& in, std::ostream& out) :catalogue(catalogue), out_(out), document_(Read(in)) {
+			JSONReaderMB(std::istream& in): document_(Read(in)) {
 				ProcessBaseRequests();
-				ProcessRoutingSettings();
-				ProcessStatRequests();
+				rss=ProcessRoutingSettings();
+				svg_set=ProcessRenderSettings();
+				catalogue.CalculateAll();
+				tr_ = new transport_router::TransportRouter(catalogue, rss);
+				if (document_.GetRoot().AsMap().count("serialization_settings")) {
+					auto ofs_file = std::ofstream(document_.GetRoot().AsMap().at("serialization_settings").AsMap().at("file").AsString(), std::ios::binary);
+					Serialization::SaveAll(ofs_file, catalogue, svg_set,*tr_,rss);
+				}
 			}
 
-			~JSONReader() {
+			~JSONReaderMB() {
 				if (tr_ != NULL) {
 					delete tr_;
 				}
 			}
 
-			Catalogue& catalogue;
+			Catalogue catalogue;
+			SvgSetting svg_set;
+			detail::RoutingSettingsStorage rss;
+			json::Document document_;
+			transport_router::TransportRouter* tr_ = NULL;
 		private:
 			void AddJSONStop(const json::Map& json_stop);
 
@@ -36,28 +49,42 @@ namespace TransportCatalogue {
 
 			void ProcessBaseRequests();
 
+			detail::RoutingSettingsStorage ProcessRoutingSettings();
+
+			SvgSetting ProcessRenderSettings();
+
+			//std::ostream& ProcessPath();
+			//json::Document document_;
+		};
+
+		class JSONReader {
+		public:
+			JSONReader(std::istream& in, std::ostream& out) :out_(out),document_(Read(in)) {
+				if (document_.GetRoot().AsMap().count("serialization_settings")) {
+					auto ifs_file = std::ifstream(document_.GetRoot().AsMap().at("serialization_settings").AsMap().at("file").AsString(), std::ios::binary);
+					Serialization::LoadAll(ifs_file, catalogue, svg_set,tr_);
+				}
+				ProcessStatRequests();
+			}
+
+			Catalogue catalogue;
+			SvgSetting svg_set;
+			detail::RoutingSettingsStorage rss;
+		private:
 			json::NodeData AnswerJSONStop(const json::Map& map);
 
 			json::NodeData AnswerJSONBus(const json::Map& map);
 
-			detail::RoutingSettingsStorage ProcessRoutingSettings();
-
 			json::NodeData AnswerJSONRoute(const json::Map& map);
-
-			SvgSetting ProcessRenderSettings();
 
 			json::NodeData AnswerJSONMap(const json::Map& map);
 
 			void ProcessStatRequests();
 
+			//std::istream& ProcessPath();
+
 			std::ostream& out_;
-			transport_router::TransportRouter* tr_ = NULL;
-			/*
-			detail::RoutingSettingsStorage routing_settings_;
-			graph::DirectedWeightedGraph<double> graph_;
-			std::map<std::string_view,size_t> stop_id_;
-			std::vector<detail::EdgeData> edges_;
-			*/
+			std::optional<transport_router::TransportRouter> tr_;
 			json::Document document_;
 		};
 	}

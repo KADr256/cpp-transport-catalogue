@@ -104,7 +104,7 @@ TransportCatalogue::detail::MapData DataForMap(TransportCatalogue::Catalogue& ca
 
 class MapRenderer {
 public:
-	MapRenderer(SvgSetting& settings, TransportCatalogue::Catalogue& catalogue, std::ostream& out) :settings_(settings), data_(DataForMap(catalogue)),
+	MapRenderer(SvgSetting& svg_set,TransportCatalogue::Catalogue& catalogue, std::ostream& out) :settings_(svg_set), data_(DataForMap(catalogue)),
 		proj_(data_.coords_way.begin(), data_.coords_way.end(), settings_.width, settings_.height, settings_.padding) {
 		PaintWays();
 		PaintBusName();

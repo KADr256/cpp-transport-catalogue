@@ -32,7 +32,7 @@ namespace TransportCatalogue {
 			return json::Load(in);
 		}
 
-		void TransportCatalogue::json_processing::JSONReader::AddJSONStop(const json::Map& json_stop)
+		void TransportCatalogue::json_processing::JSONReaderMB::AddJSONStop(const json::Map& json_stop)
 		{
 			std::string stop_name = json_stop.at("name").AsString();
 			geo::Coordinates coord = { json_stop.at("latitude").AsDouble(),json_stop.at("longitude").AsDouble() };
@@ -46,7 +46,7 @@ namespace TransportCatalogue {
 			}
 		}
 
-		void TransportCatalogue::json_processing::JSONReader::AddJSONBus(const json::Map& json_bus)
+		void TransportCatalogue::json_processing::JSONReaderMB::AddJSONBus(const json::Map& json_bus)
 		{
 			std::string bus_name = json_bus.at("name").AsString();
 			detail::RouteType type;
@@ -65,7 +65,7 @@ namespace TransportCatalogue {
 			catalogue.AddBus(bus_name, bus_way, type);
 		}
 
-		void TransportCatalogue::json_processing::JSONReader::ProcessBaseRequests()
+		void TransportCatalogue::json_processing::JSONReaderMB::ProcessBaseRequests()
 		{
 			{
 				if (document_.GetRoot().AsMap().count("base_requests")) {
@@ -144,76 +144,6 @@ namespace TransportCatalogue {
 					.Build().AsMap();
 			}
 		}
-		/*
-		void TransportCatalogue::json_processing::JSONReader::FormGraph()
-		{
-			//std::map<std::string_view, size_t> stop_id;
-			edges_.reserve(catalogue.stops.size()*catalogue.bus.size());
-			size_t counter = 0;
-			for (auto& el : catalogue.stops) {
-				if (el.second.buses.size() != 0) {
-					stop_id_.insert({ el.first,counter++ });
-				}
-			}
-			for (auto& el1 : catalogue.bus) {
-				for (auto iter1 = el1.second.stations.begin(); iter1 != el1.second.stations.end(); ++iter1) {
-					graph_.AddEdge(graph::Edge<double>{ stop_id_[*iter1] * 2, stop_id_[*iter1] * 2 + 1, routing_settings_.bus_wait_time });
-					edges_.push_back({ detail::EdgeDataType::Wait,*iter1 });
-					double dist = 0.0;
-					int depth = -1;
-					if (iter1 + 1 != el1.second.stations.end()) {
-						auto last_iter = iter1;
-						for (auto iter2 = iter1; iter2 != el1.second.stations.end(); ++iter2) {
-							++depth;
-							auto& stop_data1 = catalogue.FindStopData(*last_iter);
-							auto& stop_data2 = catalogue.FindStopData(*iter2);
-							if (stop_data1.another_ways.count(*iter2)) {
-								dist += stop_data1.another_ways[*iter2];
-							}
-							else if (stop_data2.another_ways.count(*last_iter)) {
-								dist += stop_data2.another_ways[*last_iter];
-							}
-							else {
-								dist += geo::ComputeDistance(stop_data1.coord, stop_data2.coord);
-							}
-							double copy = dist / routing_settings_.bus_velocity;
-							graph_.AddEdge(graph::Edge<double>{ stop_id_[*iter1] * 2 + 1, stop_id_[*iter2] * 2, copy});
-							edges_.push_back({detail::EdgeDataType::Bus,std::nullopt,depth,el1.first,copy});
-							last_iter = iter2;
-						}
-					}
-				}
-				if (el1.second.type == detail::RouteType::twoway) {
-					for (auto iter3 = el1.second.stations.rbegin(); iter3 != el1.second.stations.rend(); ++iter3) {
-						graph_.AddEdge(graph::Edge<double>{ stop_id_[*iter3] * 2, stop_id_[*iter3] * 2 + 1, routing_settings_.bus_wait_time });
-						edges_.push_back({ detail::EdgeDataType::Wait,*iter3 });
-						double dist = 0.0;
-						size_t depth = 0;
-						if (iter3 + 1 != el1.second.stations.rend()) {
-							auto last_iter = iter3;
-							for (auto iter4 = iter3; iter4 != el1.second.stations.rend(); ++iter4) {
-								auto& stop_data1 = catalogue.FindStopData(*last_iter);
-								auto& stop_data2 = catalogue.FindStopData(*iter4);
-								if (stop_data1.another_ways.count(*iter4)) {
-									dist += stop_data1.another_ways[*iter4];
-								}
-								else if (stop_data2.another_ways.count(*last_iter)) {
-									dist += stop_data2.another_ways[*last_iter];
-								}
-								else {
-									dist += geo::ComputeDistance(stop_data1.coord, stop_data2.coord);
-								}
-								double copy = dist / routing_settings_.bus_velocity;
-								graph_.AddEdge(graph::Edge<double>{ stop_id_[*iter3] * 2 + 1, stop_id_[*iter4] * 2, copy});
-								edges_.push_back({ detail::EdgeDataType::Bus,std::nullopt,depth,el1.first,copy});
-								last_iter = iter4;
-							}
-						}
-					}
-				}
-			}
-		}
-		*/
 
 		json::NodeData TransportCatalogue::json_processing::JSONReader::AnswerJSONRoute(const json::Map& json_request) {
 			std::string stop_from = json_request.at("from").AsString();
@@ -227,12 +157,7 @@ namespace TransportCatalogue {
 					.Build().AsMap();
 			}
 
-			if (tr_ == NULL) {
-				auto set = ProcessRoutingSettings();
-				tr_ = new transport_router::TransportRouter(catalogue, set);
-			}
-
-			auto way = tr_->BuildRoute(stop_from, stop_to);
+			auto way = tr_.value().BuildRoute(stop_from, stop_to);
 
 			json::Builder result{};
 			result.StartDict();
@@ -267,7 +192,7 @@ namespace TransportCatalogue {
 			return result.EndDict().Build().AsMap();
 		}
 
-		SvgSetting TransportCatalogue::json_processing::JSONReader::ProcessRenderSettings()
+		SvgSetting TransportCatalogue::json_processing::JSONReaderMB::ProcessRenderSettings()
 		{
 			SvgSetting setting;
 			if (document_.GetRoot().AsMap().count("render_settings")) {
@@ -294,7 +219,7 @@ namespace TransportCatalogue {
 			return setting;
 		}
 
-		detail::RoutingSettingsStorage TransportCatalogue::json_processing::JSONReader::ProcessRoutingSettings()
+		detail::RoutingSettingsStorage TransportCatalogue::json_processing::JSONReaderMB::ProcessRoutingSettings()
 		{
 			detail::RoutingSettingsStorage result;
 			if (document_.GetRoot().AsMap().count("routing_settings")) {
@@ -312,8 +237,7 @@ namespace TransportCatalogue {
 		{
 			json::Builder Answer;
 			std::stringstream buf1;
-			auto setting = ProcessRenderSettings();
-			MapRenderer map_ren = MapRenderer(setting, catalogue, buf1);
+			MapRenderer map_ren = MapRenderer(svg_set,catalogue, buf1);
 
 			Answer.StartDict()
 				.Key("map").Value(buf1.str())

@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package SaveLoad;
+
+import "map_renderer.proto";
+import "transport_router.proto";
+
+message Words {
+	repeated string st_words = 1;
+	repeated string bus_words=2;
+}
+
+message RouteData {
+	uint32 stops_count = 1;
+	uint32 unique_stops_count = 2;
+	double lenght = 3;
+	double curvatur = 4;
+	bool type = 5;
+	repeated uint32 word_id_stop = 6;
+}
+
+message Bus {
+	repeated uint32 word_id_bus = 1;
+	repeated RouteData route_data = 2;
+}
+
+message StopData {
+	double lat=1;
+	double lng=2;
+	repeated uint32 word_id_bus = 3;
+}
+
+message Stop {
+	repeated uint32 word_id_stop = 1;
+	repeated StopData stop_data = 2;
+}
+
+message Catalogue {
+	Words words = 1;
+	Bus bus = 2;
+	Stop stop = 3;
+}
+
+message TransportCatalogue {
+	Catalogue catalogue = 1;
+	SvgSetting svg_set = 2;
+	TransportRouter tr_router = 3;
+}
