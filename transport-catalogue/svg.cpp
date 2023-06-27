@@ -13,7 +13,6 @@ namespace svg {
 	void Object::Render(const RenderContext& context) const {
 		context.RenderIndent();
 
-		// Делегируем вывод тега своим подклассам
 		RenderObject(context);
 
 		context.out << std::endl;
@@ -36,7 +35,7 @@ namespace svg {
 	void Circle::RenderObject(const RenderContext& context) const {
 		auto& out = context.out;
 		out << "  <circle cx=\""sv << center_.x << "\" cy=\""sv << center_.y << "\" "sv;
-		out << "r=\""sv << radius_ << "\""sv;//???????????????"\" "
+		out << "r=\""sv << radius_ << "\""sv;
 		RenderAttrs(out);
 		out << "/>"sv;
 	}
@@ -65,39 +64,33 @@ namespace svg {
 		out << "/>"sv;
 	}
 	//Text---------------------------
-	// Задаёт координаты опорной точки (атрибуты x и y)
 	Text& svg::Text::SetPosition(Point pos) {
 		this->start_.x = pos.x;
 		this->start_.y = pos.y;
 		return *this;
 	}
 
-	// Задаёт смещение относительно опорной точки (атрибуты dx, dy)
 	Text& svg::Text::SetOffset(Point offset) {
 		this->offset_.x = offset.x;
 		this->offset_.y = offset.y;
 		return *this;
 	}
 
-	// Задаёт размеры шрифта (атрибут font-size)
 	Text& svg::Text::SetFontSize(uint32_t size) {
 		this->font_size_ = size;
 		return *this;
 	}
 
-	// Задаёт название шрифта (атрибут font-family)
 	Text& svg::Text::SetFontFamily(std::string font_family) {
 		this->font_family_ = font_family;
 		return *this;
 	}
 
-	// Задаёт толщину шрифта (атрибут font-weight)
 	Text& svg::Text::SetFontWeight(std::string font_weight) {
 		this->font_weight_ = font_weight;
 		return *this;
 	}
 
-	// Задаёт текстовое содержимое объекта (отображается внутри тега text)
 	Text& svg::Text::SetData(std::string data) {
 		this->text_ = data;
 		return *this;

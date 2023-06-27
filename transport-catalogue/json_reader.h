@@ -52,9 +52,6 @@ namespace TransportCatalogue {
 			detail::RoutingSettingsStorage ProcessRoutingSettings();
 
 			SvgSetting ProcessRenderSettings();
-
-			//std::ostream& ProcessPath();
-			//json::Document document_;
 		};
 
 		class JSONReader {
@@ -80,8 +77,6 @@ namespace TransportCatalogue {
 			json::NodeData AnswerJSONMap(const json::Map& map);
 
 			void ProcessStatRequests();
-
-			//std::istream& ProcessPath();
 
 			std::ostream& out_;
 			std::optional<transport_router::TransportRouter> tr_;

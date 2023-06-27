@@ -216,7 +216,6 @@ void TransportCatalogue::Serialization::SaveTransportRouter(const Catalogue& cat
 			edge_out.set_to(el1.to);
 			edge_out.set_weight(el1.weight);
 			*dwgraph.add_edges() = edge_out;
-			//*dwgraph.mutable_edges(dwgraph.edges_size() - 1) = edge_out;
 		}
 		for (auto& el1 : tr_router.graph_tr.incidence_lists) {
 			SaveLoad::IncedenceListL1 inc_list_l1;
@@ -224,7 +223,6 @@ void TransportCatalogue::Serialization::SaveTransportRouter(const Catalogue& cat
 				inc_list_l1.add_edge_id(el2);
 			}
 			*dwgraph.add_incedence_list() = inc_list_l1;
-			//*dwgraph.mutable_incedence_list(dwgraph.incedence_list_size() - 1) = inc_list_l1;
 		}
 		*tr_router_out.mutable_graph() = std::move(dwgraph);
 	}
@@ -246,7 +244,6 @@ void TransportCatalogue::Serialization::SaveTransportRouter(const Catalogue& cat
 						data.set_opt(false);
 					}
 					*ridl1.add_data_l1() = std::move(data);
-					//*ridl1.mutable_data_l1(ridl1.data_l1_size() - 1)=std::move(data);
 				}
 				else {
 					ridl1.add_opt(false);
@@ -254,7 +251,6 @@ void TransportCatalogue::Serialization::SaveTransportRouter(const Catalogue& cat
 				}
 			}
 			*router.add_data_l2() = ridl1;
-			//*router.mutable_data_l2(router.data_l2_size() - 1) = ridl1;
 		}
 		*tr_router_out.mutable_router() = std::move(router);
 	}
@@ -299,7 +295,6 @@ void TransportCatalogue::Serialization::LoadTransportRouter(Catalogue& catalogue
 		std::vector<size_t> incidence_lists1;
 		for (int j = 0; j < tr_router_in.graph().incedence_list()[i].edge_id_size(); ++j) {
 			incidence_lists1.push_back(tr_router_in.graph().incedence_list()[i].edge_id()[j]);
-			//incidence_lists[i][j] = tr_router_in.graph().incedence_list()[i].edge_id()[j];
 		}
 		incidence_lists.push_back(std::move(incidence_lists1));
 	}

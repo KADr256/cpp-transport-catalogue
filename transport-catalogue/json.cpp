@@ -29,7 +29,6 @@ namespace json {
 
 			std::string parsed_num;
 
-			// Считывает в parsed_num очередной символ из input
 			auto read_char = [&parsed_num, &input] {
 				parsed_num += static_cast<char>(input.get());
 				if (!input) {
@@ -37,7 +36,6 @@ namespace json {
 				}
 			};
 
-			// Считывает одну или более цифр в parsed_num из input
 			auto read_digits = [&input, read_char] {
 				if (!std::isdigit(input.peek())) {
 					throw ParsingError("A digit is expected"s);
@@ -50,24 +48,20 @@ namespace json {
 			if (input.peek() == '-') {
 				read_char();
 			}
-			// Парсим целую часть числа
 			if (input.peek() == '0') {
 				read_char();
-				// После 0 в JSON не могут идти другие цифры
 			}
 			else {
 				read_digits();
 			}
 
 			bool is_int = true;
-			// Парсим дробную часть числа
 			if (input.peek() == '.') {
 				read_char();
 				read_digits();
 				is_int = false;
 			}
 
-			// Парсим экспоненциальную часть числа
 			if (int ch = input.peek(); ch == 'e' || ch == 'E') {
 				read_char();
 				if (ch = input.peek(); ch == '+' || ch == '-') {
@@ -79,13 +73,10 @@ namespace json {
 
 			try {
 				if (is_int) {
-					// Сначала пробуем преобразовать строку в int
 					try {
 						return Node(std::stoi(parsed_num));
 					}
 					catch (...) {
-						// В случае неудачи, например, при переполнении,
-						// код ниже попробует преобразовать строку в double
 					}
 				}
 				return Node(std::stod(parsed_num));
@@ -95,28 +86,6 @@ namespace json {
 			}
 		}
 
-		/*
-		Node LoadNum(istream& input) {
-			std::string in;
-			double res_d = 0;
-			char c;
-			bool doub = false;
-			c = input.peek();
-			while (c != ',' && c != ']' && c != '}' && c != -1) {
-				in += input.get();
-				c = input.peek();
-			}
-			res_d = std::stod(in);
-			if (std::count(in.begin(), in.end(), '.')) {
-				doub = true;
-			}
-			if (doub == true) {
-				return Node(res_d);
-			}
-			return Node(static_cast<int>(res_d));
-		}
-		*/
-
 		Node LoadString(std::istream& input) {
 			using namespace std::literals;
 
@@ -125,24 +94,19 @@ namespace json {
 			std::string s;
 			while (true) {
 				if (it == end) {
-					// Поток закончился до того, как встретили закрывающую кавычку?
 					throw ParsingError("String parsing error");
 				}
 				const char ch = *it;
 				if (ch == '"') {
-					// Встретили закрывающую кавычку
 					++it;
 					break;
 				}
 				else if (ch == '\\') {
-					// Встретили начало escape-последовательности
 					++it;
 					if (it == end) {
-						// Поток завершился сразу после символа обратной косой черты
 						throw ParsingError("String parsing error");
 					}
 					const char escaped_char = *(it);
-					// Обрабатываем одну из последовательностей: \\, \n, \t, \r, \"
 					switch (escaped_char) {
 					case 'n':
 						s.push_back('\n');
@@ -160,16 +124,13 @@ namespace json {
 						s.push_back('\\');
 						break;
 					default:
-						// Встретили неизвестную escape-последовательность
 						throw ParsingError("Unrecognized escape sequence \\"s + escaped_char);
 					}
 				}
 				else if (ch == '\n' || ch == '\r') {
-					// Строковый литерал внутри- JSON не может прерываться символами \r или \n
 					throw ParsingError("Unexpected end of line"s);
 				}
 				else {
-					// Просто считываем очередной символ и помещаем его в результирующую строку
 					s.push_back(ch);
 				}
 				++it;
@@ -283,11 +244,11 @@ namespace json {
 		return std::holds_alternative<int>(data_);
 	}
 	bool Node::IsDouble() const {
-		return std::holds_alternative<int>(data_) || std::holds_alternative<double>(data_);;
-	}// Возвращает true, если в Node хранится int либо double.
+		return std::holds_alternative<int>(data_) || std::holds_alternative<double>(data_);
+	}
 	bool Node::IsPureDouble() const {
 		return std::holds_alternative<double>(data_);
-	}// Возвращает true, если в Node хранится double.
+	}
 	bool Node::IsBool() const {
 		return std::holds_alternative<bool>(data_);
 	}
@@ -330,7 +291,7 @@ namespace json {
 		else {
 			throw std::logic_error("");
 		}
-	}// .Возвращает значение типа double, если внутри хранится double либо int.В последнем случае возвращается приведённое в double значение.
+	}
 	const std::string& Node::AsString() const {
 		if (IsString()) {
 			return std::get<std::string>(data_);
@@ -347,7 +308,7 @@ namespace json {
 			throw std::logic_error("");
 		}
 	}
-	const Map& Node::AsMap() const { // map
+	const Map& Node::AsMap() const {
 		if (IsMap()) {
 			return std::get<Map>(data_);
 		}

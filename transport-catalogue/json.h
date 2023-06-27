@@ -12,13 +12,11 @@
 namespace json {
 
 	class Node;
-	// Сохраните объявления Dict и Array без изменения
 	using Dict = std::map<std::string, Node>;
 	using Map = std::map<std::string, Node>;
 	using Array = std::vector<Node>;
 	using NodeData = std::variant<std::nullptr_t, int, double, std::string, bool, Array, Map>;
 
-	// Эта ошибка должна выбрасываться при ошибках парсинга JSON
 	class ParsingError : public std::runtime_error {
 	public:
 		using runtime_error::runtime_error;
@@ -26,7 +24,6 @@ namespace json {
 
 	class Node {
 	public:
-		/* Реализуйте Node, используя std::variant */
 
 		Node();
 		Node(nullptr_t);
@@ -39,8 +36,8 @@ namespace json {
 		Node(NodeData data);
 
 		bool IsInt() const;
-		bool IsDouble() const;// Возвращает true, если в Node хранится int либо double.
-		bool IsPureDouble() const;// Возвращает true, если в Node хранится double.
+		bool IsDouble() const;
+		bool IsPureDouble() const;
 		bool IsBool() const;
 		bool IsString() const;
 		bool IsNull() const;
@@ -49,7 +46,7 @@ namespace json {
 
 		int AsInt() const;
 		bool AsBool() const;
-		double AsDouble() const;// .Возвращает значение типа double, если внутри хранится double либо int.В последнем случае возвращается приведённое в double значение.
+		double AsDouble() const;
 		const std::string& AsString() const;
 		const Array& AsArray() const;
 		const Map& AsMap() const;

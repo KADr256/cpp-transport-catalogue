@@ -33,13 +33,6 @@ namespace TransportCatalogue {
 			std::unordered_map<std::string_view, int> another_ways;
 		};
 
-		/*
-		struct RouteDataStorage {
-			detail::RouteType type;
-			std::deque<std::string_view> stations;
-		};
-		*/
-
 		struct MapData {
 			std::deque<geo::Coordinates> coords_way;
 			std::vector<size_t> coords_count;
@@ -66,52 +59,5 @@ namespace TransportCatalogue {
 			std::optional<std::string_view> bus;
 			std::optional<double> time;
 		};
-		/*
-		SaveLoad::Color TransferColorOut(const svg::Color& color) {
-			SaveLoad::Color color_out;
-			switch (color.index())
-			{
-			case 0:
-				color_out.set_name("none");
-				break;
-			case 1:
-				color_out.set_name(color);
-				break;
-			case 2:
-				color_out.set_name("rgb");
-				auto& buf1 = std::get<svg::Rgb>(color);
-				color_out.set_red(buf1.red);
-				color_out.set_blue(buf1.blue);
-				color_out.set_green(buf1.green);
-				break;
-			case 3:
-				color_out.set_name("rgba");
-				auto& buf2 = std::get<svg::Rgba>(color);
-				color_out.set_red(buf2.red);
-				color_out.set_blue(buf2.blue);
-				color_out.set_green(buf2.green);
-				color_out.set_opacity(buf2.opacity);
-				break;
-			}
-		}
-
-		svg::Color TransferColorIn(const SaveLoad::Color& color) {
-			if (color.name() == "none") {
-				std::monostate result;
-				return { result };
-			}
-			else if (color.name() == "rgb") {
-				svg::Rgb result(color.red(), color.green(), color.blue());
-				return { result };
-			}
-			else if (color.name() == "rgba") {
-				svg::Rgba result(color.red(), color.green(), color.blue(), color.opacity());
-				return { result };
-			}
-			else {
-				return { color.name() };
-			}
-		}
-		*/
 	}
 }

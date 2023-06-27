@@ -7,9 +7,6 @@ BuilderRaw& json::BuilderRaw::Key(std::string key)
 	if (nodes_stack_.size() != 0 && nodes_stack_.back()->IsMap()) {
 		if (!last_key_.second) {
 			last_key_.first = key;
-			//Dict& buf = std::get<Dict>(nodes_stack_.back()->AccessData());
-			//buf.insert({ key,{}});
-			//buf[key] = {};
 			last_key_.second = true;
 		}
 		else {
@@ -33,7 +30,6 @@ BuilderRaw& json::BuilderRaw::Value(json::NodeData data)
 	else if (last_key_.second && nodes_stack_.back()->IsMap()) {
 		auto& buf1 = std::get<Map>(nodes_stack_.back()->AccessData());
 		buf1[last_key_.first].AccessData() = data;
-		//last_key_.first.clear();
 		last_key_.second = false;
 	}
 	else if (nodes_stack_.back()->IsArray()) {
@@ -60,7 +56,6 @@ BuilderRaw& json::BuilderRaw::StartDict()
 		auto& buf1 = std::get<Dict>(nodes_stack_.back()->AccessData());
 		buf1[last_key_.first].AccessData().emplace<Dict>();
 		auto& buf2 = buf1[last_key_.first];
-		//last_key_.clear();
 		last_key_.second = false;
 		nodes_stack_.push_back(&buf2);
 	}
@@ -90,7 +85,6 @@ BuilderRaw& json::BuilderRaw::StartArray()
 		auto& buf1 = std::get<Dict>(nodes_stack_.back()->AccessData());
 		buf1[last_key_.first].AccessData().emplace<Array>();
 		auto& buf2 = buf1[last_key_.first];
-		//last_key_.clear();
 		last_key_.second = false;
 		nodes_stack_.push_back(&buf2);
 	}
